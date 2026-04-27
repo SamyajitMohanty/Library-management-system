@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>LibraryOS — Management System</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #0f0e0c;
+    --surface:  #1a1916;
+    --card:     #232119;
+    --border:   #2e2b24;
+    --accent:   #c9a84c;
+    --accent2:  #e8c97a;
+    --text:     #e8e4d9;
+    --muted:    #7a7468;
+    --danger:   #c0392b;
+    --success:  #2ecc71;
+    --info:     #3498db;
+    --font-head: 'DM Serif Display', serif;
+    --font-body: 'DM Sans', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --radius:   10px;
+    --shadow:   0 4px 24px rgba(0,0,0,0.5);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 240px; min-height: 100vh;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 100;
+  }
+  .logo {
+    padding: 28px 24px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .logo-title {
+    font-family: var(--font-head);
+    font-size: 1.5rem;
+    color: var(--accent);
+    letter-spacing: 0.01em;
+  }
+  .logo-sub {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-top: 2px;
+  }
+  .nav { padding: 16px 0; flex: 1; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 24px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    color: var(--muted);
+    border-left: 3px solid transparent;
+    transition: all 0.18s;
+    user-select: none;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(201,168,76,0.06); }
+  .nav-item.active {
+    color: var(--accent);
+    border-left-color: var(--accent);
+    background: rgba(201,168,76,0.08);
+    font-weight: 600;
+  }
+  .nav-item .icon { font-size: 1.1rem; width: 20px; text-align: center; }
+  .sidebar-footer {
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: var(--font-mono);
+  }
+
+  /* MAIN */
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    display: flex; flex-direction: column;
+    min-height: 100vh;
+  }
+  .topbar {
+    padding: 20px 36px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface);
+    position: sticky; top: 0; z-index: 50;
+  }
+  .page-title {
+    font-family: var(--font-head);
+    font-size: 1.6rem;
+    color: var(--text);
+  }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-family: var(--font-mono);
+    font-weight: 500;
+  }
+  .badge-gold { background: rgba(201,168,76,0.15); color: var(--accent2); }
+  .badge-red  { background: rgba(192,57,43,0.15);  color: #e74c3c; }
+  .badge-green{ background: rgba(46,204,113,0.15); color: #2ecc71; }
+  .badge-blue { background: rgba(52,152,219,0.15); color: #3498db; }
+
+  .content { padding: 32px 36px; flex: 1; }
+
+  /* TABS / SECTIONS */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* STAT CARDS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .stat-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+  .stat-label { font-size: 0.72rem; color: var(--muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.1em; }
+  .stat-value { font-family: var(--font-head); font-size: 2.2rem; color: var(--accent2); margin: 6px 0 2px; }
+  .stat-sub   { font-size: 0.76rem; color: var(--muted); }
+  .stat-icon  { position: absolute; right: 16px; top: 16px; font-size: 1.8rem; opacity: 0.15; }
+
+  /* TABLE */
+  .table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+  .table-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .table-header h3 { font-size: 0.9rem; font-weight: 600; color: var(--text); }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+  }
+  thead tr { background: rgba(201,168,76,0.05); }
+  th {
+    padding: 11px 16px;
+    text-align: left;
+    font-size: 0.7rem;
+    font-family: var(--font-mono);
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 500;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 11px 16px;
+    border-bottom: 1px solid rgba(46,43,36,0.5);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(201,168,76,0.03); }
+
+  /* FORM */
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 0.75rem; color: var(--muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.08em; }
+  input, select, textarea {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+  select option { background: var(--card); }
+  textarea { resize: vertical; min-height: 70px; }
+
+  .form-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .form-card h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* BUTTONS */
+  .btn {
+    padding: 9px 18px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-body);
+    font-size: 0.83rem;
+    font-weight: 500;
+    transition: all 0.15s;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .btn-primary { background: var(--accent); color: #1a1916; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-danger  { background: rgba(192,57,43,0.15); color: #e74c3c; border: 1px solid rgba(192,57,43,0.3); }
+  .btn-danger:hover  { background: rgba(192,57,43,0.25); }
+  .btn-success { background: rgba(46,204,113,0.15); color: #2ecc71; border: 1px solid rgba(46,204,113,0.3); }
+  .btn-success:hover { background: rgba(46,204,113,0.25); }
+  .btn-ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--accent); }
+  .btn-sm { padding: 5px 11px; font-size: 0.77rem; }
+
+  /* SEARCH */
+  .search-bar {
+    display: flex; gap: 10px;
+    margin-bottom: 18px;
+  }
+  .search-bar input { flex: 1; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 14px 20px;
+    font-size: 0.85rem;
+    color: var(--text);
+    box-shadow: var(--shadow);
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+    z-index: 999;
+    max-width: 300px;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { border-left-color: var(--success); }
+  #toast.error   { border-left-color: var(--danger); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 200;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    width: 480px;
+    max-width: 95vw;
+    transform: scale(0.95);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.open .modal { transform: scale(1); }
+  .modal h3 {
+    font-family: var(--font-head);
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+    color: var(--accent2);
+  }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+  /* EMPTY STATE */
+  .empty {
+    text-align: center;
+    padding: 48px;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+  .empty .big { font-size: 2.5rem; margin-bottom: 10px; }
+
+  /* OVERDUE */
+  .overdue { color: #e74c3c; }
+
+  /* SQL SECTION */
+  .sql-box {
+    background: #0a0908;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: #a8c891;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    overflow-x: auto;
+    margin-bottom: 16px;
+  }
+  .sql-comment { color: #5a5a4a; }
+  .sql-keyword { color: var(--accent2); }
+  .sql-table   { color: #7fc8e8; }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-title">LibraryOS</div>
+    <div class="logo-sub">Management System</div>
+  </div>
+  <div class="nav">
+    <div class="nav-item active" onclick="showSection('dashboard')">
+      <span class="icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showSection('books')">
+      <span class="icon">📚</span> Books
+    </div>
+    <div class="nav-item" onclick="showSection('members')">
+      <span class="icon">👤</span> Members
+    </div>
+    <div class="nav-item" onclick="showSection('issue')">
+      <span class="icon">📤</span> Issue / Return
+    </div>
+    <div class="nav-item" onclick="showSection('transactions')">
+      <span class="icon">🧾</span> Transactions
+    </div>
+    <div class="nav-item" onclick="showSection('schema')">
+      <span class="icon">🗄️</span> SQL Schema
+    </div>
+  </div>
+  <div class="sidebar-footer">
+    MySQL + HTML/CSS/JS<br/>
+    Mini Project · DBMS
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="page-title" id="pageTitle">Dashboard</div>
+    <div class="topbar-right">
+      <span class="badge badge-gold" id="totalBooksTop">— books</span>
+      <span class="badge badge-red"  id="overdueTop">— overdue</span>
+      <span class="badge badge-blue" id="issuedTop">— issued</span>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="section active" id="sec-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Books</div>
+          <div class="stat-value" id="statBooks">0</div>
+          <div class="stat-sub">titles in collection</div>
+          <div class="stat-icon">📚</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Members</div>
+          <div class="stat-value" id="statMembers">0</div>
+          <div class="stat-sub">registered members</div>
+          <div class="stat-icon">👥</div>
+        </div>
+        <div class="stat-card" style="--accent:#e74c3c">
+          <div class="stat-label">Currently Issued</div>
+          <div class="stat-value" id="statIssued" style="color:#e8c97a">0</div>
+          <div class="stat-sub">books out right now</div>
+          <div class="stat-icon">📤</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Overdue</div>
+          <div class="stat-value" id="statOverdue" style="color:#e74c3c">0</div>
+          <div class="stat-sub">past due date</div>
+          <div class="stat-icon">⚠️</div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>Recent Transactions</h3>
+          <span class="badge badge-gold">Latest 10</span>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Issue ID</th><th>Book</th><th>Member</th>
+            <th>Issued On</th><th>Due Date</th><th>Status</th>
+          </tr></thead>
+          <tbody id="recentTable"><tr><td colspan="6" class="empty">No data</td></tr></tbody>
+        </table>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>⚠️ Overdue Books</h3>
+        </div>
+        <table>
+          <thead><tr>
+            <th>Book</th><th>Member</th><th>Due Date</th><th>Days Overdue</th><th>Est. Fine</th>
+          </tr></thead>
+          <tbody id="overdueTable"><tr><td colspan="5" class="empty">No overdue books 🎉</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- BOOKS -->
+    <div class="section" id="sec-books">
+      <div class="form-card">
+        <h3>➕ Add New Book</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Title</label>
+            <input type="text" id="bTitle" placeholder="Book title"/>
+          </div>
+          <div class="form-group">
+            <label>Author</label>
+            <input type="text" id="bAuthor" placeholder="Author name"/>
+          </div>
+          <div class="form-group">
+            <label>ISBN</label>
+            <input type="text" id="bISBN" placeholder="978-XXXXXXXXXX"/>
+          </div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="bCategory">
+              <option value="Fiction">Fiction</option>
+              <option value="Science">Science</option>
+              <option value="History">History</option>
+              <option value="Mathematics">Mathematics</option>
+              <option value="Computer Science">Computer Science</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Publisher</label>
+            <input type="text" id="bPublisher" placeholder="Publisher name"/>
+          </div>
+          <div class="form-group">
+            <label>Year</label>
+            <input type="number" id="bYear" placeholder="2024" min="1800" max="2099"/>
+          </div>
+          <div class="form-group">
+            <label>Total Copies</label>
+            <input type="number" id="bCopies" value="1" min="1"/>
+          </div>
+        </div>
+        <div style="margin-top:16px">
+          <button class="btn btn-primary" onclick="addBook()">＋ Add Book</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>All Books</h3>
+        </div>
+        <div style="padding: 12px 16px 0;">
+          <div class="search-bar">
+            <input type="text" id="bookSearch" placeholder="🔍  Search by title, author or category…" oninput="renderBooks()"/>
+          </div>
+        </div>
+        <table>
+          <thead><tr>
+            <th>#</th><th>Title</th><th>Author</th><th>Category</th>
+            <th>Year</th><th>Total</th><th>Available</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="booksTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MEMBERS -->
+    <div class="section" id="sec-members">
+      <div class="form-card">
+        <h3>➕ Register Member</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input type="text" id="mName" placeholder="Member name"/>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="mEmail" placeholder="member@email.com"/>
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="text" id="mPhone" placeholder="10-digit number"/>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="mStatus">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Address</label>
+            <textarea id="mAddress" placeholder="Member address"></textarea>
+          </div>
+        </div>
+        <div style="margin-top:16px">
+          <button class="btn btn-primary" onclick="addMember()">＋ Register</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header"><h3>All Members</h3></div>
+        <div style="padding: 12px 16px 0;">
+          <div class="search-bar">
+            <input type="text" id="memberSearch" placeholder="🔍  Search by name or email…" oninput="renderMembers()"/>
+          </div>
+        </div>
+        <table>
+          <thead><tr>
+            <th>#</th><th>Name</th><th>Email</th><th>Phone</th>
+            <th>Joined</th><th>Status</th><th>Books Issued</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="membersTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ISSUE / RETURN -->
+    <div class="section" id="sec-issue">
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+        <div class="form-card">
+          <h3>📤 Issue a Book</h3>
+          <div class="form-grid" style="grid-template-columns:1fr">
+            <div class="form-group">
+              <label>Select Book</label>
+              <select id="issueBook"></select>
+            </div>
+            <div class="form-group">
+              <label>Select Member</label>
+              <select id="issueMember"></select>
+            </div>
+            <div class="form-group">
+              <label>Loan Period (days)</label>
+              <input type="number" id="issueDays" value="14" min="1" max="60"/>
+            </div>
+          </div>
+          <div style="margin-top:16px">
+            <button class="btn btn-primary" onclick="issueBook()">Issue Book</button>
+          </div>
+        </div>
+        <div class="form-card">
+          <h3>📥 Return a Book</h3>
+          <div class="form-grid" style="grid-template-columns:1fr">
+            <div class="form-group">
+              <label>Select Issued Record</label>
+              <select id="returnSelect"></select>
+            </div>
+            <div id="finePreview" style="background:rgba(201,168,76,0.08);border:1px solid var(--border);border-radius:6px;padding:14px;font-size:0.84rem;color:var(--muted);margin-top:8px;">
+              Select a record to preview fine
+            </div>
+          </div>
+          <div style="margin-top:16px">
+            <button class="btn btn-success" onclick="returnBook()">Return &amp; Calculate Fine</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div class="table-header"><h3>Currently Issued Books</h3></div>
+        <table>
+          <thead><tr>
+            <th>ID</th><th>Book</th><th>Member</th><th>Issued</th><th>Due</th><th>Status</th>
+          </tr></thead>
+          <tbody id="issuedTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- TRANSACTIONS -->
+    <div class="section" id="sec-transactions">
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>All Transactions</h3>
+          <div style="display:flex;gap:8px;">
+            <select id="txFilter" onchange="renderTransactions()" style="font-size:0.8rem;padding:5px 10px;">
+              <option value="all">All</option>
+              <option value="issued">Issued</option>
+              <option value="returned">Returned</option>
+              <option value="overdue">Overdue</option>
+            </select>
+          </div>
+        </div>
+        <table>
+          <thead><tr>
+            <th>ID</th><th>Book</th><th>Member</th><th>Issued</th>
+            <th>Due</th><th>Returned</th><th>Fine (₹)</th><th>Status</th>
+          </tr></thead>
+          <tbody id="txTable"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SQL SCHEMA -->
+    <div class="section" id="sec-schema">
+      <div class="form-card">
+        <h3>🗄️ Database Schema — ER Overview</h3>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;">
+            <div style="color:var(--accent2);font-weight:600;margin-bottom:10px;font-size:0.88rem;">📋 members</div>
+            <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--muted);line-height:2;">
+              🔑 member_id (PK)<br>name, email (UNIQUE)<br>phone, address<br>joined_date, status
+            </div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;">
+            <div style="color:var(--accent2);font-weight:600;margin-bottom:10px;font-size:0.88rem;">📚 books</div>
+            <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--muted);line-height:2;">
+              🔑 book_id (PK)<br>title, author, isbn<br>🔗 category_id (FK)<br>total/available_copies
+            </div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;">
+            <div style="color:var(--accent2);font-weight:600;margin-bottom:10px;font-size:0.88rem;">🧾 issued_books</div>
+            <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--muted);line-height:2;">
+              🔑 issue_id (PK)<br>🔗 book_id, member_id (FK)<br>issue/due/return_date<br>fine_amount, status
+            </div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;">
+            <div style="color:var(--accent2);font-weight:600;margin-bottom:10px;font-size:0.88rem;">🗂️ categories</div>
+            <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--muted);line-height:2;">
+              🔑 category_id (PK)<br>name (UNIQUE)<br>description
+            </div>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;">
+            <div style="color:var(--accent2);font-weight:600;margin-bottom:10px;font-size:0.88rem;">💰 fine_payments</div>
+            <div style="font-family:var(--font-mono);font-size:0.75rem;color:var(--muted);line-height:2;">
+              🔑 payment_id (PK)<br>🔗 issue_id (FK)<br>amount_paid<br>payment_date
+            </div>
+          </div>
+        </div>
+
+        <div style="color:var(--muted);font-size:0.8rem;margin-bottom:12px;font-family:var(--font-mono);">
+          -- Key relationships & constraints
+        </div>
+        <div class="sql-box"><span class="sql-comment">-- 1. Each book belongs to a category (many books → 1 category)</span>
+<span class="sql-keyword">ALTER TABLE</span> <span class="sql-table">books</span>
+  <span class="sql-keyword">ADD FOREIGN KEY</span> (category_id) <span class="sql-keyword">REFERENCES</span> <span class="sql-table">categories</span>(category_id);
+
+<span class="sql-comment">-- 2. Each issue record links a book to a member</span>
+<span class="sql-keyword">ALTER TABLE</span> <span class="sql-table">issued_books</span>
+  <span class="sql-keyword">ADD FOREIGN KEY</span> (book_id)   <span class="sql-keyword">REFERENCES</span> <span class="sql-table">books</span>(book_id),
+  <span class="sql-keyword">ADD FOREIGN KEY</span> (member_id) <span class="sql-keyword">REFERENCES</span> <span class="sql-table">members</span>(member_id);
+
+<span class="sql-comment">-- 3. Fine payments linked to issued_books</span>
+<span class="sql-keyword">ALTER TABLE</span> <span class="sql-table">fine_payments</span>
+  <span class="sql-keyword">ADD FOREIGN KEY</span> (issue_id) <span class="sql-keyword">REFERENCES</span> <span class="sql-table">issued_books</span>(issue_id);
+
+<span class="sql-comment">-- Stored procedure: issue a book</span>
+<span class="sql-keyword">CALL</span> issue_book(book_id, member_id, loan_days);
+
+<span class="sql-comment">-- Stored procedure: return a book (auto-calculates fine @ ₹5/day)</span>
+<span class="sql-keyword">CALL</span> return_book(issue_id);
+
+<span class="sql-comment">-- View: currently issued with overdue days</span>
+<span class="sql-keyword">SELECT</span> * <span class="sql-keyword">FROM</span> <span class="sql-table">v_issued_books</span> <span class="sql-keyword">WHERE</span> status = <span style="color:#a8d8a8">'issued'</span>;
+
+<span class="sql-comment">-- Overdue query</span>
+<span class="sql-keyword">SELECT</span> * <span class="sql-keyword">FROM</span> <span class="sql-table">v_issued_books</span>
+<span class="sql-keyword">WHERE</span> status = <span style="color:#a8d8a8">'issued'</span> <span class="sql-keyword">AND</span> due_date &lt; <span class="sql-keyword">CURDATE</span>();</div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- DELETE MODAL -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <h3>Confirm Delete</h3>
+    <p style="color:var(--muted);font-size:0.88rem;">Are you sure you want to delete this record? This action cannot be undone.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// DATA STORE (simulates MySQL tables in-memory for frontend)
+// ============================================================
+let db = {
+  books: [
+    { id:1, title:"The Alchemist",              author:"Paulo Coelho",        isbn:"978-0062315007", category:"Fiction",          publisher:"HarperCollins", year:1988, total:3, available:3 },
+    { id:2, title:"A Brief History of Time",    author:"Stephen Hawking",     isbn:"978-0553380163", category:"Science",          publisher:"Bantam Books",  year:1988, total:2, available:2 },
+    { id:3, title:"Sapiens",                    author:"Yuval Noah Harari",   isbn:"978-0062316097", category:"History",          publisher:"Harper Perennial",year:2015,total:2, available:1 },
+    { id:4, title:"Introduction to Algorithms", author:"Cormen et al.",       isbn:"978-0262033848", category:"Mathematics",      publisher:"MIT Press",     year:2009, total:4, available:4 },
+    { id:5, title:"Clean Code",                 author:"Robert C. Martin",    isbn:"978-0132350884", category:"Computer Science", publisher:"Prentice Hall", year:2008, total:3, available:2 },
+    { id:6, title:"1984",                       author:"George Orwell",       isbn:"978-0451524935", category:"Fiction",          publisher:"Signet Classic", year:1949, total:2, available:2 },
+    { id:7, title:"The Great Gatsby",           author:"F. Scott Fitzgerald", isbn:"978-0743273565", category:"Fiction",          publisher:"Scribner",      year:1925, total:2, available:2 },
+    { id:8, title:"Cosmos",                     author:"Carl Sagan",          isbn:"978-0345539434", category:"Science",          publisher:"Ballantine",    year:1980, total:2, available:2 },
+  ],
+  members: [
+    { id:1, name:"Arjun Sharma", email:"arjun.sharma@email.com", phone:"9876543210", address:"12 MG Road, Bengaluru",     joined:"2024-01-15", status:"active" },
+    { id:2, name:"Priya Nair",   email:"priya.nair@email.com",   phone:"9765432109", address:"45 Koramangala, Bengaluru", joined:"2024-02-20", status:"active" },
+    { id:3, name:"Rohan Mehta",  email:"rohan.mehta@email.com",  phone:"9654321098", address:"8 Indiranagar, Bengaluru",  joined:"2024-03-10", status:"active" },
+    { id:4, name:"Sneha Iyer",   email:"sneha.iyer@email.com",   phone:"9543210987", address:"23 Jayanagar, Bengaluru",   joined:"2024-04-05", status:"active" },
+  ],
+  issued: [
+    { id:1, bookId:1, memberId:1, issueDate:"2025-04-01", dueDate:"2025-04-15", returnDate:"2025-04-13", fine:0,  status:"returned" },
+    { id:2, bookId:3, memberId:2, issueDate:"2025-04-10", dueDate:"2025-04-24", returnDate:null,         fine:0,  status:"issued"   },
+    { id:3, bookId:5, memberId:3, issueDate:today(),      dueDate:addDays(14),  returnDate:null,         fine:0,  status:"issued"   },
+  ],
+  nextBookId: 9, nextMemberId: 5, nextIssueId: 4
+};
+
+function today() {
+  return new Date().toISOString().split('T')[0];
+}
+function addDays(n, from) {
+  const d = from ? new Date(from) : new Date();
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+function daysBetween(d1, d2) {
+  const a = new Date(d1), b = new Date(d2);
+  return Math.floor((b - a) / 86400000);
+}
+function calcFine(dueDate) {
+  const t = today(), overdue = daysBetween(dueDate, t);
+  return overdue > 0 ? overdue * 5 : 0;
+}
+function getBook(id)   { return db.books.find(b => b.id === id); }
+function getMember(id) { return db.members.find(m => m.id === id); }
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+const titles = {
+  dashboard:'Dashboard', books:'Books', members:'Members',
+  issue:'Issue / Return', transactions:'Transactions', schema:'SQL Schema'
+};
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick')?.includes(id)) n.classList.add('active');
+  });
+  document.getElementById('pageTitle').textContent = titles[id];
+  if (id === 'issue') populateIssueSelects();
+  renderAll();
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderAll() {
+  updateStats();
+  renderBooks();
+  renderMembers();
+  renderIssuedTable();
+  renderTransactions();
+  renderDashboardRecent();
+  renderOverdue();
+}
+
+function updateStats() {
+  const issued = db.issued.filter(i => i.status === 'issued');
+  const overdue = issued.filter(i => i.dueDate < today());
+  document.getElementById('statBooks').textContent   = db.books.length;
+  document.getElementById('statMembers').textContent = db.members.length;
+  document.getElementById('statIssued').textContent  = issued.length;
+  document.getElementById('statOverdue').textContent = overdue.length;
+  document.getElementById('totalBooksTop').textContent = db.books.length + ' books';
+  document.getElementById('issuedTop').textContent    = issued.length + ' issued';
+  document.getElementById('overdueTop').textContent   = overdue.length + ' overdue';
+}
+
+function statusBadge(s) {
+  const map = {issued:'badge-blue',returned:'badge-green',overdue:'badge-red'};
+  return `<span class="badge ${map[s]||'badge-gold'}">${s}</span>`;
+}
+function memberStatusBadge(s) {
+  const map = {active:'badge-green',inactive:'badge-gold',suspended:'badge-red'};
+  return `<span class="badge ${map[s]||'badge-gold'}">${s}</span>`;
+}
+
+function renderBooks() {
+  const q = document.getElementById('bookSearch')?.value.toLowerCase()||'';
+  const filtered = db.books.filter(b =>
+    b.title.toLowerCase().includes(q) ||
+    b.author.toLowerCase().includes(q) ||
+    b.category.toLowerCase().includes(q)
+  );
+  const tbody = document.getElementById('booksTable');
+  if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty"><div class="big">📚</div>No books found</td></tr>`; return; }
+  tbody.innerHTML = filtered.map(b => `
+    <tr>
+      <td style="color:var(--muted);font-family:var(--font-mono);font-size:0.78rem">#${b.id}</td>
+      <td><strong>${b.title}</strong></td>
+      <td>${b.author}</td>
+      <td><span class="badge badge-gold">${b.category}</span></td>
+      <td>${b.year||'—'}</td>
+      <td>${b.total}</td>
+      <td><span class="${b.available===0?'overdue':''}">${b.available}</span></td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteBook(${b.id})">Delete</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderMembers() {
+  const q = document.getElementById('memberSearch')?.value.toLowerCase()||'';
+  const filtered = db.members.filter(m =>
+    m.name.toLowerCase().includes(q) ||
+    m.email.toLowerCase().includes(q)
+  );
+  const tbody = document.getElementById('membersTable');
+  if (!filtered.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty"><div class="big">👤</div>No members found</td></tr>`; return; }
+  tbody.innerHTML = filtered.map(m => {
+    const booksIssued = db.issued.filter(i => i.memberId === m.id && i.status === 'issued').length;
+    return `
+    <tr>
+      <td style="color:var(--muted);font-family:var(--font-mono);font-size:0.78rem">#${m.id}</td>
+      <td><strong>${m.name}</strong></td>
+      <td style="color:var(--muted)">${m.email}</td>
+      <td style="font-family:var(--font-mono);font-size:0.8rem">${m.phone}</td>
+      <td style="color:var(--muted)">${m.joined}</td>
+      <td>${memberStatusBadge(m.status)}</td>
+      <td>${booksIssued > 0 ? `<span class="badge badge-blue">${booksIssued} active</span>` : '—'}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="deleteMember(${m.id})">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderIssuedTable() {
+  const list = db.issued.filter(i => i.status === 'issued');
+  const tbody = document.getElementById('issuedTable');
+  if (!list.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty">No books currently issued</td></tr>`; return; }
+  tbody.innerHTML = list.map(i => {
+    const b = getBook(i.bookId), m = getMember(i.memberId);
+    const isOverdue = i.dueDate < today();
+    return `<tr>
+      <td style="font-family:var(--font-mono);font-size:0.78rem">#${i.id}</td>
+      <td>${b?.title||'—'}</td>
+      <td>${m?.name||'—'}</td>
+      <td>${i.issueDate}</td>
+      <td class="${isOverdue?'overdue':''}">${i.dueDate}${isOverdue?' ⚠️':''}</td>
+      <td>${statusBadge(isOverdue?'overdue':'issued')}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTransactions() {
+  const filter = document.getElementById('txFilter')?.value || 'all';
+  let list = db.issued;
+  if (filter !== 'all') list = list.filter(i => {
+    if (filter === 'overdue') return i.status === 'issued' && i.dueDate < today();
+    return i.status === filter;
+  });
+  const tbody = document.getElementById('txTable');
+  if (!list.length) { tbody.innerHTML = `<tr><td colspan="8" class="empty">No records</td></tr>`; return; }
+  tbody.innerHTML = list.map(i => {
+    const b = getBook(i.bookId), m = getMember(i.memberId);
+    const isOverdue = i.status === 'issued' && i.dueDate < today();
+    const displayStatus = isOverdue ? 'overdue' : i.status;
+    return `<tr>
+      <td style="font-family:var(--font-mono);font-size:0.78rem">#${i.id}</td>
+      <td>${b?.title||'—'}</td>
+      <td>${m?.name||'—'}</td>
+      <td>${i.issueDate}</td>
+      <td class="${isOverdue?'overdue':''}">${i.dueDate}</td>
+      <td>${i.returnDate||'—'}</td>
+      <td style="font-family:var(--font-mono)">${i.fine > 0 ? '₹'+i.fine : '—'}</td>
+      <td>${statusBadge(displayStatus)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderDashboardRecent() {
+  const list = [...db.issued].reverse().slice(0, 10);
+  const tbody = document.getElementById('recentTable');
+  if (!list.length) { tbody.innerHTML = `<tr><td colspan="6" class="empty">No transactions yet</td></tr>`; return; }
+  tbody.innerHTML = list.map(i => {
+    const b = getBook(i.bookId), m = getMember(i.memberId);
+    const isOverdue = i.status === 'issued' && i.dueDate < today();
+    return `<tr>
+      <td style="font-family:var(--font-mono);font-size:0.78rem">#${i.id}</td>
+      <td>${b?.title||'—'}</td>
+      <td>${m?.name||'—'}</td>
+      <td>${i.issueDate}</td>
+      <td class="${isOverdue?'overdue':''}">${i.dueDate}</td>
+      <td>${statusBadge(isOverdue?'overdue':i.status)}</td>
+    </tr>`;
+  }).join('');
+}
+
+function renderOverdue() {
+  const list = db.issued.filter(i => i.status === 'issued' && i.dueDate < today());
+  const tbody = document.getElementById('overdueTable');
+  if (!list.length) { tbody.innerHTML = `<tr><td colspan="5" class="empty">No overdue books 🎉</td></tr>`; return; }
+  tbody.innerHTML = list.map(i => {
+    const b = getBook(i.bookId), m = getMember(i.memberId);
+    const days = daysBetween(i.dueDate, today());
+    const fine = days * 5;
+    return `<tr>
+      <td>${b?.title||'—'}</td>
+      <td>${m?.name||'—'}</td>
+      <td class="overdue">${i.dueDate}</td>
+      <td class="overdue">${days} days</td>
+      <td style="font-family:var(--font-mono);color:#e74c3c">₹${fine}</td>
+    </tr>`;
+  }).join('');
+}
+
+function populateIssueSelects() {
+  // Books with available copies
+  const bs = document.getElementById('issueBook');
+  const avail = db.books.filter(b => b.available > 0);
+  bs.innerHTML = avail.length
+    ? avail.map(b => `<option value="${b.id}">${b.title} (${b.available} avail.)</option>`).join('')
+    : `<option disabled>No books available</option>`;
+
+  // Members
+  const ms = document.getElementById('issueMember');
+  ms.innerHTML = db.members.map(m => `<option value="${m.id}">${m.name}</option>`).join('');
+
+  // Return select
+  const rs = document.getElementById('returnSelect');
+  const issued = db.issued.filter(i => i.status === 'issued');
+  rs.innerHTML = issued.length
+    ? issued.map(i => {
+        const b = getBook(i.bookId), m = getMember(i.memberId);
+        return `<option value="${i.id}">#${i.id} — ${b?.title} → ${m?.name} (due: ${i.dueDate})</option>`;
+      }).join('')
+    : `<option disabled>No issued books</option>`;
+
+  rs.onchange = previewFine;
+  previewFine();
+}
+
+function previewFine() {
+  const rs = document.getElementById('returnSelect');
+  if (!rs.value) return;
+  const rec = db.issued.find(i => i.id === +rs.value);
+  if (!rec) return;
+  const fine = calcFine(rec.dueDate);
+  const days = daysBetween(rec.dueDate, today());
+  document.getElementById('finePreview').innerHTML = days > 0
+    ? `<span style="color:#e74c3c">⚠️ Overdue by ${days} day(s)</span><br>Fine: <strong style="color:#e74c3c">₹${fine}</strong> (₹5/day)`
+    : `<span style="color:var(--success)">✓ On time — No fine</span>`;
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function addBook() {
+  const title = document.getElementById('bTitle').value.trim();
+  const author = document.getElementById('bAuthor').value.trim();
+  if (!title || !author) { toast('Title and Author are required', 'error'); return; }
+  const copies = +document.getElementById('bCopies').value || 1;
+  db.books.push({
+    id: db.nextBookId++,
+    title, author,
+    isbn:      document.getElementById('bISBN').value.trim(),
+    category:  document.getElementById('bCategory').value,
+    publisher: document.getElementById('bPublisher').value.trim(),
+    year:      +document.getElementById('bYear').value || null,
+    total: copies, available: copies
+  });
+  ['bTitle','bAuthor','bISBN','bPublisher','bYear'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('bCopies').value = 1;
+  renderAll();
+  toast('Book added successfully ✓', 'success');
+}
+
+function addMember() {
+  const name  = document.getElementById('mName').value.trim();
+  const email = document.getElementById('mEmail').value.trim();
+  if (!name || !email) { toast('Name and Email are required', 'error'); return; }
+  if (db.members.find(m => m.email === email)) { toast('Email already registered', 'error'); return; }
+  db.members.push({
+    id: db.nextMemberId++,
+    name, email,
+    phone:   document.getElementById('mPhone').value.trim(),
+    address: document.getElementById('mAddress').value.trim(),
+    joined:  today(),
+    status:  document.getElementById('mStatus').value
+  });
+  ['mName','mEmail','mPhone','mAddress'].forEach(id => document.getElementById(id).value = '');
+  renderAll();
+  toast('Member registered successfully ✓', 'success');
+}
+
+function issueBook() {
+  const bookId   = +document.getElementById('issueBook').value;
+  const memberId = +document.getElementById('issueMember').value;
+  const days     = +document.getElementById('issueDays').value || 14;
+  const book     = getBook(bookId);
+  if (!book || book.available < 1) { toast('No copies available', 'error'); return; }
+  const already = db.issued.find(i => i.bookId === bookId && i.memberId === memberId && i.status === 'issued');
+  if (already) { toast('Member already has this book', 'error'); return; }
+  db.issued.push({
+    id: db.nextIssueId++,
+    bookId, memberId,
+    issueDate:  today(),
+    dueDate:    addDays(days),
+    returnDate: null,
+    fine:       0,
+    status:     'issued'
+  });
+  book.available--;
+  populateIssueSelects();
+  renderAll();
+  toast(`Book issued for ${days} days ✓`, 'success');
+}
+
+function returnBook() {
+  const id  = +document.getElementById('returnSelect').value;
+  const rec = db.issued.find(i => i.id === id);
+  if (!rec) { toast('Select a valid issued record', 'error'); return; }
+  const fine = calcFine(rec.dueDate);
+  rec.returnDate = today();
+  rec.fine       = fine;
+  rec.status     = 'returned';
+  const book = getBook(rec.bookId);
+  if (book) book.available++;
+  populateIssueSelects();
+  renderAll();
+  toast(fine > 0 ? `Returned. Fine: ₹${fine}` : 'Returned successfully ✓', fine > 0 ? 'error' : 'success');
+}
+
+let pendingDelete = null;
+function deleteBook(id) {
+  const issued = db.issued.find(i => i.bookId === id && i.status === 'issued');
+  if (issued) { toast('Cannot delete — book is currently issued', 'error'); return; }
+  pendingDelete = () => {
+    db.books = db.books.filter(b => b.id !== id);
+    renderAll(); closeModal();
+    toast('Book deleted', 'success');
+  };
+  document.getElementById('deleteModal').classList.add('open');
+  document.getElementById('confirmDeleteBtn').onclick = pendingDelete;
+}
+function deleteMember(id) {
+  const issued = db.issued.find(i => i.memberId === id && i.status === 'issued');
+  if (issued) { toast('Cannot delete — member has issued books', 'error'); return; }
+  pendingDelete = () => {
+    db.members = db.members.filter(m => m.id !== id);
+    renderAll(); closeModal();
+    toast('Member deleted', 'success');
+  };
+  document.getElementById('deleteModal').classList.add('open');
+  document.getElementById('confirmDeleteBtn').onclick = pendingDelete;
+}
+function closeModal() {
+  document.getElementById('deleteModal').classList.remove('open');
+}
+
+let toastTimer;
+function toast(msg, type='success') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 3200);
+}
+
+// INIT
+renderAll();
+</script>
+</body>
+</html>
